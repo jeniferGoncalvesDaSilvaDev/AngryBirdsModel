@@ -43,15 +43,23 @@ P_passaro <- table(df$passaro) / n
 P_sucesso_dado_passaro <- tapply(df$p, df$passaro, mean)
 
 # Teorema de Bayes: P(passaro | sucesso)
-P_passaro_dado_sucesso <- (P_sucesso_dado_passaro * P_passaro) / P_sucesso
+# Evita divisão por zero
+if (P_sucesso > 0) {
+  P_passaro_dado_sucesso <- (P_sucesso_dado_passaro * P_passaro) / P_sucesso
+} else {
+  P_passaro_dado_sucesso <- rep(0, length(P_passaro))
+  names(P_passaro_dado_sucesso) <- names(P_passaro)
+}
 
 # Resultado final
 resultado <- data.frame(
-  P_sucesso_dado_passaro,
+  P_sucesso_dado_passaro = as.numeric(P_sucesso_dado_passaro),
   P_passaro = as.numeric(P_passaro),
-  P_passaro_dado_sucesso
+  P_passaro_dado_sucesso = as.numeric(P_passaro_dado_sucesso)
 )
 
+# Adiciona os nomes dos pássaros como row names
+rownames(resultado) <- names(P_passaro)
+
 #resultado <- resultado[order(-resultado$P_passaro_dado_sucesso), ]
-resultado$P_passaro_dado_sucesso <- as.numeric(resultado$P_passaro_dado_sucesso)
 print(round(resultado, 3))
