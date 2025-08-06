@@ -63,3 +63,37 @@ rownames(resultado) <- names(P_passaro)
 
 #resultado <- resultado[order(-resultado$P_passaro_dado_sucesso), ]
 print(round(resultado, 3))
+
+# Matriz de correlação das variáveis físicas
+variaveis_fisicas <- data.frame(
+  k = k,
+  x = x,
+  y = y,
+  theta = theta,
+  delta_theta = delta_theta,
+  R = R,
+  M = M,
+  d = d,
+  d_otimo = d_otimo,
+  d_max = d_max,
+  h0 = h0,
+  t = t,
+  E_passaro = E_passaro,
+  v0 = v0,
+  y_t = y_t,
+  p_model = p_model
+)
+
+# Calcula a matriz de correlação
+matriz_correlacao <- cor(variaveis_fisicas)
+
+# Exibe a matriz de correlação
+cat("\n=== MATRIZ DE CORRELAÇÃO DAS VARIÁVEIS FÍSICAS ===\n")
+print(round(matriz_correlacao, 3))
+
+# Cria um heatmap da matriz de correlação
+library(corrplot)
+corrplot(matriz_correlacao, method = "color", type = "upper", 
+         order = "hclust", tl.cex = 0.8, tl.col = "black", 
+         title = "Matriz de Correlação - Variáveis Físicas",
+         mar = c(0,0,1,0))
