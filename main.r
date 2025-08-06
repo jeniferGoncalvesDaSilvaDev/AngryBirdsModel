@@ -101,4 +101,62 @@ for (i in 1:nrow(medias_tipos)) {
   cat(sprintf("%s: %.3f\n", medias_tipos$passaro[i], medias_tipos$p[i]))
 }
 
+# TEOREMA DE BAYES
+cat("\n=== TEOREMA DE BAYES ===\n")
+cat("-------------------------\n")
+
+# Calcular probabilidades
+tipos_unicos <- unique(passaros)
+resultado <- data.frame(
+  Passaro = character(),
+  P_sucesso_dado_passaro = numeric(),
+  P_passaro = numeric(),
+  P_passaro_dado_sucesso = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Define sucesso como p > 0.5
+sucesso <- p_model > 0.5
+
+for (tipo in tipos_unicos) {
+  # P(sucesso|passaro)
+  indices_tipo <- which(passaros == tipo)
+  p_sucesso_dado_passaro <- mean(sucesso[indices_tipo])
+  
+  # P(passaro)
+  p_passaro <- length(indices_tipo) / n
+  
+  # P(passaro|sucesso) usando Teorema de Bayes
+  # P(A|B) = P(B|A) * P(A) / P(B)
+  p_sucesso <- mean(sucesso)
+  if (p_sucesso > 0) {
+    p_passaro_dado_sucesso <- (p_sucesso_dado_passaro * p_passaro) / p_sucesso
+  } else {
+    p_passaro_dado_sucesso <- 0
+  }
+  
+  resultado <- rbind(resultado, data.frame(
+    Passaro = tipo,
+    P_sucesso_dado_passaro = p_sucesso_dado_passaro,
+    P_passaro = p_passaro,
+    P_passaro_dado_sucesso = p_passaro_dado_sucesso
+  ))
+}
+
+cat("TABELA DO TEOREMA DE BAYES (Sucesso = P > 0.5):\n")
+cat("Pássaro\t\tP(S|P)\t\tP(P)\t\tP(P|S)\n")
+cat("-------\t\t------\t\t----\t\t------\n")
+for (i in 1:nrow(resultado)) {
+  cat(sprintf("%-10s\t%.3f\t\t%.3f\t\t%.3f\n", 
+              resultado$Passaro[i], 
+              resultado$P_sucesso_dado_passaro[i],
+              resultado$P_passaro[i],
+              resultado$P_passaro_dado_sucesso[i]))
+}
+
+cat("\nLegenda:\n")
+cat("P(S|P) = Probabilidade de sucesso dado o tipo de pássaro\n")
+cat("P(P) = Probabilidade a priori do tipo de pássaro\n")
+cat("P(P|S) = Probabilidade do tipo de pássaro dado o sucesso\n")
+
 cat("\n===============================================\n")
