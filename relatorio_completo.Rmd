@@ -1,0 +1,230 @@
+
+---
+title: "Relatório Estatístico Completo - Análise de Angry Birds"
+author: "Análise Física e Estatística"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    fig_width: 8
+    fig_height: 6
+header-includes:
+  - \usepackage[utf8]{inputenc}
+  - \usepackage[brazil]{babel}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.align = 'center')
+library(knitr)
+library(ggplot2)
+```
+
+```{r dados, include=FALSE}
+# Executa o código principal
+source("main.r")
+```
+
+# Sumário Executivo
+
+Este relatório apresenta uma análise estatística completa de um sistema de lançamento de projéteis baseado no jogo Angry Birds. A análise inclui `r n` observações simuladas com diferentes parâmetros físicos.
+
+**Principais Resultados:**
+- Probabilidade média de sucesso: `r round(mean(p_model), 3)` (`r round(mean(p_model)*100, 1)`%)
+- Taxa de sucesso máxima observada: `r round(max(p_model), 3)` (`r round(max(p_model)*100, 1)`%)
+- Coeficiente de variação: `r round((sd(p_model)/mean(p_model))*100, 1)`%
+
+# Análise das Variáveis Físicas
+
+## Estatísticas Descritivas
+
+```{r tabela_descritivas}
+# Cria tabela de estatísticas descritivas
+variaveis <- list(
+  "Constante k (N/m)" = k,
+  "Deslocamento x (m)" = x,
+  "Deslocamento y (m)" = y,
+  "Ângulo θ (°)" = theta*180/pi,
+  "Variação Δθ (°)" = delta_theta*180/pi,
+  "Raio R (m)" = R,
+  "Massa M (kg)" = M,
+  "Distância d (m)" = d,
+  "Energia (J)" = E_passaro,
+  "Velocidade v₀ (m/s)" = v0,
+  "Probabilidade" = p_model
+)
+
+estatisticas_df <- data.frame(
+  Variável = names(variaveis),
+  Mínimo = sapply(variaveis, min),
+  Q1 = sapply(variaveis, function(x) quantile(x, 0.25)),
+  Média = sapply(variaveis, mean),
+  Mediana = sapply(variaveis, median),
+  Q3 = sapply(variaveis, function(x) quantile(x, 0.75)),
+  Máximo = sapply(variaveis, max),
+  DP = sapply(variaveis, sd)
+)
+
+kable(estatisticas_df, digits = 2, caption = "Estatísticas Descritivas das Variáveis")
+```
+
+## Histogramas das Variáveis Principais
+
+```{r histogramas, fig.height=12}
+par(mfrow = c(4, 3))
+
+# Principais variáveis
+hist(k, main = "Constante Elástica (k)", xlab = "k (N/m)", col = "lightblue", breaks = 10)
+hist(theta*180/pi, main = "Ângulo de Lançamento", xlab = "θ (graus)", col = "lightgreen", breaks = 10)
+hist(R, main = "Raio do Alvo", xlab = "R (m)", col = "lightcoral", breaks = 10)
+hist(M, main = "Massa do Pássaro", xlab = "M (kg)", col = "lightyellow", breaks = 3)
+hist(d, main = "Distância ao Alvo", xlab = "d (m)", col = "lightpink", breaks = 10)
+hist(E_passaro, main = "Energia do Pássaro", xlab = "E (J)", col = "wheat", breaks = 15)
+hist(v0, main = "Velocidade Inicial", xlab = "v₀ (m/s)", col = "tan", breaks = 15)
+hist(y_t, main = "Posição Y(t)", xlab = "y(t) (m)", col = "thistle", breaks = 15)
+hist(p_model, main = "Probabilidade do Modelo", xlab = "P(sucesso)", col = "plum", breaks = 15)
+
+par(mfrow = c(1, 1))
+```
+
+# Análise de Correlações
+
+## Matriz de Correlação
+
+```{r matriz_correlacao}
+kable(round(matriz_correlacao[1:8, 1:8], 3), caption = "Matriz de Correlação (Primeiras 8 variáveis)")
+```
+
+## Correlações Mais Fortes
+
+```{r correlacoes_fortes}
+# Encontra as 10 correlações mais fortes
+correlacoes_matriz <- matriz_correlacao
+correlacoes_matriz[lower.tri(correlacoes_matriz, diag = TRUE)] <- NA
+correlacoes_vetor <- as.vector(correlacoes_matriz)
+nomes_pares <- outer(rownames(matriz_correlacao), colnames(matriz_correlacao), paste, sep = " ↔ ")
+nomes_vetor <- as.vector(nomes_pares)
+correlacoes_validas <- !is.na(correlacoes_vetor)
+correlacoes_ordenadas <- order(abs(correlacoes_vetor[correlacoes_validas]), decreasing = TRUE)
+
+top_correlacoes <- data.frame(
+  Ranking = 1:10,
+  Variáveis = nomes_vetor[which(correlacoes_validas)][correlacoes_ordenadas[1:10]],
+  Correlação = round(correlacoes_vetor[which(correlacoes_validas)][correlacoes_ordenadas[1:10]], 3)
+)
+
+kable(top_correlacoes, caption = "Top 10 Correlações Mais Fortes")
+```
+
+# Análise da Probabilidade de Sucesso
+
+## Distribuição da Probabilidade
+
+```{r prob_distribuicao}
+# Categorização da probabilidade
+p_categorizada <- cut(p_model, breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0), 
+                      labels = c("Muito Baixa", "Baixa", "Média", "Alta", "Muito Alta"))
+tabela_categorias <- table(p_categorizada)
+
+categorias_df <- data.frame(
+  Categoria = names(tabela_categorias),
+  Frequência = as.numeric(tabela_categorias),
+  Percentual = round((as.numeric(tabela_categorias)/n)*100, 1)
+)
+
+kable(categorias_df, caption = "Categorização da Probabilidade de Sucesso")
+```
+
+## Análise por Tipo de Pássaro
+
+```{r passaros_bayes}
+kable(round(resultado, 3), caption = "Análise Bayesiana por Tipo de Pássaro")
+```
+
+# Testes Estatísticos
+
+## Testes de Hipóteses
+
+```{r testes}
+# Teste de normalidade
+shapiro_p <- shapiro.test(p_model)$p.value
+t_test <- t.test(p_model, mu = 0.5)
+anova_resultado <- summary(aov(p ~ passaro, data = df))
+
+testes_df <- data.frame(
+  Teste = c("Shapiro-Wilk (Normalidade)", "Teste t (μ = 0.5)", "ANOVA (Tipos de pássaros)"),
+  Estatística = c("-", round(t_test$statistic, 3), round(anova_resultado[[1]]$`F value`[1], 3)),
+  P_valor = c(sprintf("%.6f", shapiro_p), sprintf("%.6f", t_test$p.value), sprintf("%.6f", anova_resultado[[1]]$`Pr(>F)`[1])),
+  Conclusão = c(
+    ifelse(shapiro_p < 0.05, "Não-normal", "Normal"),
+    ifelse(t_test$p.value < 0.05, "≠ 0.5", "= 0.5"),
+    ifelse(anova_resultado[[1]]$`Pr(>F)`[1] < 0.05, "Diferenças significativas", "Sem diferenças")
+  )
+)
+
+kable(testes_df, caption = "Resultados dos Testes Estatísticos")
+```
+
+# Análise de Eficiência
+
+## Configuração Ótima Observada
+
+```{r config_otima}
+melhor_idx <- which.max(p_model)
+config_otima <- data.frame(
+  Parâmetro = c("Constante k", "Deslocamento x", "Deslocamento y", "Ângulo θ", "Massa M", "Distância d", "Probabilidade"),
+  Valor = c(
+    paste(round(k[melhor_idx], 1), "N/m"),
+    paste(round(x[melhor_idx], 2), "m"),
+    paste(round(y[melhor_idx], 2), "m"),
+    paste(round(theta[melhor_idx]*180/pi, 1), "°"),
+    paste(M[melhor_idx], "kg"),
+    paste(round(d[melhor_idx], 1), "m"),
+    paste(round(p_model[melhor_idx], 3), "(", round(p_model[melhor_idx]*100, 1), "%)")
+  )
+)
+
+kable(config_otima, caption = "Configuração que Resultou na Maior Probabilidade")
+```
+
+## Intervalos de Confiança (95%)
+
+```{r intervalos_confianca}
+ic_prob <- t.test(p_model)$conf.int
+ic_energia <- t.test(E_passaro)$conf.int
+ic_velocidade <- t.test(v0)$conf.int
+
+ic_df <- data.frame(
+  Variável = c("Probabilidade", "Energia (J)", "Velocidade (m/s)"),
+  Limite_Inferior = c(round(ic_prob[1], 3), round(ic_energia[1], 1), round(ic_velocidade[1], 1)),
+  Limite_Superior = c(round(ic_prob[2], 3), round(ic_energia[2], 1), round(ic_velocidade[2], 1))
+)
+
+kable(ic_df, caption = "Intervalos de Confiança de 95%")
+```
+
+# Conclusões e Recomendações
+
+## Principais Achados
+
+1. **Performance Geral**: O sistema apresenta uma probabilidade média de sucesso de `r round(mean(p_model)*100, 1)`%, com alta variabilidade (`r round((sd(p_model)/mean(p_model))*100, 1)`% CV).
+
+2. **Correlações Importantes**: 
+   - Energia e velocidade têm correlação quase perfeita (r = `r round(cor(E_passaro, v0), 3)`)
+   - Massa tem correlação negativa com probabilidade (r = `r round(cor(M, p_model), 3)`)
+
+3. **Distribuição**: A probabilidade de sucesso não segue distribuição normal (p < 0.05).
+
+4. **Tipos de Pássaros**: Não há diferenças estatisticamente significativas entre os tipos (p = `r round(anova_resultado[[1]]$'Pr(>F)'[1], 3)`).
+
+## Recomendações Técnicas
+
+1. **Otimização de Ângulo**: Manter ângulos próximos a 45° para máximo alcance teórico
+2. **Controle de Distância**: Minimizar a diferença entre distância real e distância ótima
+3. **Seleção de Alvo**: Priorizar alvos com maior raio quando possível
+4. **Gestão de Massa**: Considerar o trade-off entre massa e precisão
+
+---
+
+*Relatório gerado automaticamente em `r Sys.Date()`*

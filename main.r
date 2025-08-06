@@ -583,3 +583,34 @@ cat(sprintf("• Taxa de sucesso difere significativamente de 50%% (p = %.6f)\n"
 cat("\n", paste(rep("=", 80), collapse=""), "\n")
 cat("                      FIM DO RELATÓRIO ESTATÍSTICO\n")
 cat(paste(rep("=", 80), collapse=""), "\n")
+
+# GERAÇÃO DO RELATÓRIO EM PDF
+cat("\n=== GERANDO RELATÓRIO EM PDF ===\n")
+
+# Instala e carrega os pacotes necessários para PDF
+if (!require(rmarkdown, quietly = TRUE)) {
+  install.packages("rmarkdown")
+  library(rmarkdown)
+}
+
+if (!require(tinytex, quietly = TRUE)) {
+  install.packages("tinytex")
+  library(tinytex)
+}
+
+# Verifica se tinytex está instalado, se não instala
+if (!tinytex:::is_tinytex()) {
+  cat("Instalando TinyTeX para geração de PDF...\n")
+  tinytex::install_tinytex()
+}
+
+# Gera o relatório PDF
+tryCatch({
+  rmarkdown::render("relatorio_completo.Rmd", 
+                    output_file = "Relatorio_Angry_Birds_Completo.pdf",
+                    quiet = TRUE)
+  cat("✓ Relatório PDF gerado com sucesso: 'Relatorio_Angry_Birds_Completo.pdf'\n")
+}, error = function(e) {
+  cat("✗ Erro ao gerar PDF:", e$message, "\n")
+  cat("Verifique se o LaTeX está instalado no sistema.\n")
+})
