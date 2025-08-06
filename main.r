@@ -91,9 +91,87 @@ matriz_correlacao <- cor(variaveis_fisicas)
 cat("\n=== MATRIZ DE CORRELAÇÃO DAS VARIÁVEIS FÍSICAS ===\n")
 print(round(matriz_correlacao, 3))
 
+# Instala e carrega o pacote corrplot se necessário
+if (!require(corrplot, quietly = TRUE)) {
+  install.packages("corrplot")
+  library(corrplot)
+}
+
 # Cria um heatmap da matriz de correlação
-library(corrplot)
 corrplot(matriz_correlacao, method = "color", type = "upper", 
          order = "hclust", tl.cex = 0.8, tl.col = "black", 
          title = "Matriz de Correlação - Variáveis Físicas",
          mar = c(0,0,1,0))
+
+# RELATÓRIO DETALHADO DA MATRIZ DE CORRELAÇÃO
+cat("\n" , "="*60, "\n")
+cat("           RELATÓRIO DA MATRIZ DE CORRELAÇÃO\n")
+cat("="*60, "\n\n")
+
+# Encontra correlações fortes (|r| > 0.7)
+correlacoes_fortes <- which(abs(matriz_correlacao) > 0.7 & matriz_correlacao != 1, arr.ind = TRUE)
+cat("CORRELAÇÕES FORTES (|r| > 0.7):\n")
+cat("--------------------------------\n")
+if (nrow(correlacoes_fortes) > 0) {
+  for (i in 1:nrow(correlacoes_fortes)) {
+    var1 <- rownames(matriz_correlacao)[correlacoes_fortes[i,1]]
+    var2 <- colnames(matriz_correlacao)[correlacoes_fortes[i,2]]
+    valor <- round(matriz_correlacao[correlacoes_fortes[i,1], correlacoes_fortes[i,2]], 3)
+    cat(sprintf("• %s ↔ %s: r = %s\n", var1, var2, valor))
+  }
+} else {
+  cat("Nenhuma correlação forte encontrada.\n")
+}
+
+# Encontra correlações moderadas (0.5 < |r| ≤ 0.7)
+correlacoes_moderadas <- which(abs(matriz_correlacao) > 0.5 & abs(matriz_correlacao) <= 0.7, arr.ind = TRUE)
+cat("\nCORRELAÇÕES MODERADAS (0.5 < |r| ≤ 0.7):\n")
+cat("--------------------------------------\n")
+if (nrow(correlacoes_moderadas) > 0) {
+  for (i in 1:nrow(correlacoes_moderadas)) {
+    var1 <- rownames(matriz_correlacao)[correlacoes_moderadas[i,1]]
+    var2 <- colnames(matriz_correlacao)[correlacoes_moderadas[i,2]]
+    valor <- round(matriz_correlacao[correlacoes_moderadas[i,1], correlacoes_moderadas[i,2]], 3)
+    cat(sprintf("• %s ↔ %s: r = %s\n", var1, var2, valor))
+  }
+} else {
+  cat("Nenhuma correlação moderada encontrada.\n")
+}
+
+# Análise das correlações com p_model (variável dependente)
+cat("\nCORRELAÇÕES COM P_MODEL (Probabilidade):\n")
+cat("---------------------------------------\n")
+correlacoes_p_model <- matriz_correlacao[,"p_model"]
+correlacoes_p_model <- correlacoes_p_model[names(correlacoes_p_model) != "p_model"]
+correlacoes_p_model_ordenadas <- sort(abs(correlacoes_p_model), decreasing = TRUE)
+
+for (i in 1:length(correlacoes_p_model_ordenadas)) {
+  var <- names(correlacoes_p_model_ordenadas)[i]
+  valor <- round(correlacoes_p_model[var], 3)
+  interpretacao <- ifelse(abs(valor) > 0.7, "(FORTE)", 
+                   ifelse(abs(valor) > 0.5, "(MODERADA)", 
+                   ifelse(abs(valor) > 0.3, "(FRACA)", "(MUITO FRACA)")))
+  cat(sprintf("• %s: r = %s %s\n", var, valor, interpretacao))
+}
+
+# Resumo estatístico
+cat("\nRESUMO ESTATÍSTICO:\n")
+cat("-------------------\n")
+correlacoes_sem_diagonal <- matriz_correlacao[upper.tri(matriz_correlacao)]
+cat(sprintf("• Correlação média: %.3f\n", mean(correlacoes_sem_diagonal)))
+cat(sprintf("• Desvio padrão: %.3f\n", sd(correlacoes_sem_diagonal)))
+cat(sprintf("• Correlação máxima: %.3f\n", max(correlacoes_sem_diagonal)))
+cat(sprintf("• Correlação mínima: %.3f\n", min(correlacoes_sem_diagonal)))
+cat(sprintf("• Total de variáveis: %d\n", ncol(matriz_correlacao)))
+cat(sprintf("• Total de correlações analisadas: %d\n", length(correlacoes_sem_diagonal)))
+
+# Interpretações físicas importantes
+cat("\nINTERPRETAÇÕES FÍSICAS RELEVANTES:\n")
+cat("----------------------------------\n")
+cat("• E_passaro vs v0: Relação direta esperada (energia → velocidade)\n")
+cat("• theta vs y_t: Ângulo de lançamento influencia trajetória\n")
+cat("• h0 vs y_t: Altura inicial afeta posição final\n")
+cat("• R vs p_model: Raio pode afetar probabilidade de sucesso\n")
+cat("• M vs p_model: Massa influencia dinâmica do sistema\n")
+
+cat("\n" , "="*60, "\n")
