@@ -62,7 +62,7 @@ resultado <- data.frame(
 rownames(resultado) <- names(P_passaro)
 
 #resultado <- resultado[order(-resultado$P_passaro_dado_sucesso), ]
-print(round(resultado, 3))
+#print(round(resultado, 3))
 
 # Matriz de correlação das variáveis físicas
 variaveis_fisicas <- data.frame(
